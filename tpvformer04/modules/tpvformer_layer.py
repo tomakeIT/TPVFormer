@@ -168,6 +168,7 @@ class TPVFormerLayer(BaseModule):
         for layer in self.operation_order:
             # cross view hybrid-attention
             if layer == 'self_attn':
+                # only attention on hw plane.
                 query_0 = self.attentions[attn_index](
                     query[0],
                     None,

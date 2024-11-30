@@ -10,10 +10,8 @@ import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
 import numpy as np
-try:
-    from itertools import  ifilterfalse
-except ImportError: # py3k
-    from itertools import  filterfalse as ifilterfalse
+
+from itertools import  filterfalse as ifilterfalse
 
 def lovasz_grad(gt_sorted):
     """

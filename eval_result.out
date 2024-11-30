@@ -1,0 +1,37 @@
+2024-11-30 01:15:12,702 - mmseg - INFO - Validation per class iou pts:
+2024-11-30 01:15:12,702 - mmseg - INFO - barrier : 54.86%
+2024-11-30 01:15:12,702 - mmseg - INFO - bicycle : 26.66%
+2024-11-30 01:15:12,702 - mmseg - INFO - bus : 74.72%
+2024-11-30 01:15:12,702 - mmseg - INFO - car : 71.64%
+2024-11-30 01:15:12,702 - mmseg - INFO - construction_vehicle : 31.21%
+2024-11-30 01:15:12,702 - mmseg - INFO - motorcycle : 41.19%
+2024-11-30 01:15:12,702 - mmseg - INFO - pedestrian : 38.88%
+2024-11-30 01:15:12,702 - mmseg - INFO - traffic_cone : 16.62%
+2024-11-30 01:15:12,702 - mmseg - INFO - trailer : 39.81%
+2024-11-30 01:15:12,702 - mmseg - INFO - truck : 66.76%
+2024-11-30 01:15:12,702 - mmseg - INFO - driveable_surface : 65.65%
+2024-11-30 01:15:12,702 - mmseg - INFO - other_flat : 50.59%
+2024-11-30 01:15:12,702 - mmseg - INFO - sidewalk : 54.57%
+2024-11-30 01:15:12,702 - mmseg - INFO - terrain : 56.09%
+2024-11-30 01:15:12,702 - mmseg - INFO - manmade : 47.49%
+2024-11-30 01:15:12,702 - mmseg - INFO - vegetation : 44.20%
+2024-11-30 01:15:12,703 - mmseg - INFO - Validation per class iou vox:
+2024-11-30 01:15:12,703 - mmseg - INFO - barrier : 42.53%
+2024-11-30 01:15:12,703 - mmseg - INFO - bicycle : 19.47%
+2024-11-30 01:15:12,703 - mmseg - INFO - bus : 66.03%
+2024-11-30 01:15:12,703 - mmseg - INFO - car : 59.65%
+2024-11-30 01:15:12,703 - mmseg - INFO - construction_vehicle : 28.56%
+2024-11-30 01:15:12,703 - mmseg - INFO - motorcycle : 32.51%
+2024-11-30 01:15:12,703 - mmseg - INFO - pedestrian : 31.53%
+2024-11-30 01:15:12,703 - mmseg - INFO - traffic_cone : 11.26%
+2024-11-30 01:15:12,703 - mmseg - INFO - trailer : 35.69%
+2024-11-30 01:15:12,703 - mmseg - INFO - truck : 59.03%
+2024-11-30 01:15:12,703 - mmseg - INFO - driveable_surface : 42.23%
+2024-11-30 01:15:12,703 - mmseg - INFO - other_flat : 37.38%
+2024-11-30 01:15:12,703 - mmseg - INFO - sidewalk : 43.34%
+2024-11-30 01:15:12,703 - mmseg - INFO - terrain : 48.92%
+2024-11-30 01:15:12,703 - mmseg - INFO - manmade : 43.51%
+2024-11-30 01:15:12,703 - mmseg - INFO - vegetation : 42.13%
+2024-11-30 01:15:12,703 - mmseg - INFO - Current val miou pts is 48.809
+2024-11-30 01:15:12,703 - mmseg - INFO - Current val miou vox is 40.235
+2024-11-30 01:15:12,703 - mmseg - INFO - Current val loss is 0.822

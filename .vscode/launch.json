@@ -15,7 +15,7 @@
             "args": [
                 "--py-config", "./config/tpv04_occupancy.py",
                
-                "--ckpt-path", "./out/tpv_occupancy/latest.pth",
+                "--ckpt-path", "./out/tpv_occupancy/tpv04_occupancy_v2.pth",
              
             ]
         }

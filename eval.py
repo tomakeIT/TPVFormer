@@ -187,8 +187,8 @@ def main(local_rank, args):
 if __name__ == '__main__':
     # Eval settings
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--py-config', default='config/tpv_lidarseg_dim64.py')
-    parser.add_argument('--ckpt-path', type=str, default='')
+    parser.add_argument('--py-config', default='./config/tpv04_occupancy.py')
+    parser.add_argument('--ckpt-path', type=str, default='./out/tpv_occupancy/tpv04_occupancy_v2.pth')
 
     args = parser.parse_args()
     
@@ -196,4 +196,5 @@ if __name__ == '__main__':
     args.gpus = ngpus
     print(args)
 
-    torch.multiprocessing.spawn(main, args=(args,), nprocs=args.gpus)
+    main(0, args)
+    # torch.multiprocessing.spawn(main, args=(args,), nprocs=args.gpus)

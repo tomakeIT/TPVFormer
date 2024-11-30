@@ -39,9 +39,9 @@ class TPVAggregator(BaseModule):
         """
         tpv_hw, tpv_zh, tpv_wz = tpv_list[0], tpv_list[1], tpv_list[2]
         bs, _, c = tpv_hw.shape
-        tpv_hw = tpv_hw.permute(0, 2, 1).reshape(bs, c, self.tpv_h, self.tpv_w)
-        tpv_zh = tpv_zh.permute(0, 2, 1).reshape(bs, c, self.tpv_z, self.tpv_h)
-        tpv_wz = tpv_wz.permute(0, 2, 1).reshape(bs, c, self.tpv_w, self.tpv_z)
+        tpv_hw = tpv_hw.permute(0, 2, 1).reshape(bs, c, self.tpv_h, self.tpv_w) # bs, c, h, w
+        tpv_zh = tpv_zh.permute(0, 2, 1).reshape(bs, c, self.tpv_z, self.tpv_h) # bs, c, z, h
+        tpv_wz = tpv_wz.permute(0, 2, 1).reshape(bs, c, self.tpv_w, self.tpv_z) # bs, c, w, z
 
         if self.scale_h != 1 or self.scale_w != 1:
             tpv_hw = F.interpolate(
@@ -76,25 +76,25 @@ class TPVAggregator(BaseModule):
             sample_loc = points[:, :, :, [2, 0]]
             tpv_wz_pts = F.grid_sample(tpv_wz, sample_loc).squeeze(2)
 
-            tpv_hw_vox = tpv_hw.unsqueeze(-1).permute(0, 1, 3, 2, 4).expand(-1, -1, -1, -1, self.scale_z*self.tpv_z)
+            tpv_hw_vox = tpv_hw.unsqueeze(-1).permute(0, 1, 3, 2, 4).expand(-1, -1, -1, -1, self.scale_z*self.tpv_z) # [bs, c, h, w, z]
             tpv_zh_vox = tpv_zh.unsqueeze(-1).permute(0, 1, 4, 3, 2).expand(-1, -1, self.scale_w*self.tpv_w, -1, -1)
             tpv_wz_vox = tpv_wz.unsqueeze(-1).permute(0, 1, 2, 4, 3).expand(-1, -1, -1, self.scale_h*self.tpv_h, -1)
         
-            fused_vox = (tpv_hw_vox + tpv_zh_vox + tpv_wz_vox).flatten(2)
-            fused_pts = tpv_hw_pts + tpv_zh_pts + tpv_wz_pts
+            fused_vox = (tpv_hw_vox + tpv_zh_vox + tpv_wz_vox).flatten(2) # bs, c, whz
+            fused_pts = tpv_hw_pts + tpv_zh_pts + tpv_wz_pts # bs, c, n
             fused = torch.cat([fused_vox, fused_pts], dim=-1) # bs, c, whz+n
             
-            fused = fused.permute(0, 2, 1)
+            fused = fused.permute(0, 2, 1) # bs, whz+n, c
             if self.use_checkpoint:
                 fused = torch.utils.checkpoint.checkpoint(self.decoder, fused)
-                logits = torch.utils.checkpoint.checkpoint(self.classifier, fused)
+                logits = torch.utils.checkpoint.checkpoint(self.classifier, fused) # bs, whz+n, classes
             else:
                 fused = self.decoder(fused)
                 logits = self.classifier(fused)
-            logits = logits.permute(0, 2, 1)
+            logits = logits.permute(0, 2, 1)    # bs, classes, whz+n
             logits_vox = logits[:, :, :(-n)].reshape(bs, self.classes, self.scale_w*self.tpv_w, self.scale_h*self.tpv_h, self.scale_z*self.tpv_z)
             logits_pts = logits[:, :, (-n):].reshape(bs, self.classes, n, 1, 1)
-            return logits_vox, logits_pts
+            return logits_vox, logits_pts # [bs, classes, w, h, z], [bs, classes, n, 1, 1]
             
         else:
             tpv_hw = tpv_hw.unsqueeze(-1).permute(0, 1, 3, 2, 4).expand(-1, -1, -1, -1, self.scale_z*self.tpv_z)

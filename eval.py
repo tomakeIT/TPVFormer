@@ -114,7 +114,12 @@ def main(local_rank, args):
     ckpt = torch.load(cfg.resume_from, map_location=map_location)
     if 'state_dict' in ckpt:
         ckpt = ckpt['state_dict']
-    print(my_model.load_state_dict(revise_ckpt(ckpt), strict=False))
+    revised_ckpt = revise_ckpt(ckpt)
+    print(my_model.load_state_dict(revised_ckpt, strict=False))
+    print('model ckpt:')
+    print(my_model.state_dict().keys())
+    print('loaded ckpt:')
+    print(ckpt.keys())
     print(f'successfully loaded ckpt')
 
     print_freq = cfg.print_freq
@@ -182,7 +187,7 @@ def main(local_rank, args):
 if __name__ == '__main__':
     # Eval settings
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--py-config', default='config/tpv_lidarseg.py')
+    parser.add_argument('--py-config', default='config/tpv_lidarseg_dim64.py')
     parser.add_argument('--ckpt-path', type=str, default='')
 
     args = parser.parse_args()

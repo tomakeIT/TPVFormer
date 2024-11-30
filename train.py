@@ -22,6 +22,8 @@ def pass_print(*args, **kwargs):
     pass
 
 def main(local_rank, args):
+    torch.cuda.empty_cache()
+
     # global settings
     torch.backends.cudnn.benchmark = True
 
@@ -137,31 +139,35 @@ def main(local_rank, args):
     print('resume from: ', cfg.resume_from)
     print('work dir: ', args.work_dir)
 
-    if cfg.resume_from and osp.exists(cfg.resume_from):
-        map_location = 'cpu'
-        ckpt = torch.load(cfg.resume_from, map_location=map_location)
-        print(my_model.load_state_dict(revise_ckpt(ckpt['state_dict']), strict=False))
-        optimizer.load_state_dict(ckpt['optimizer'])
-        scheduler.load_state_dict(ckpt['scheduler'])
-        epoch = ckpt['epoch']
-        if 'best_val_miou_pts' in ckpt:
-            best_val_miou_pts = ckpt['best_val_miou_pts']
-        if 'best_val_miou_vox' in ckpt:
-            best_val_miou_vox = ckpt['best_val_miou_vox']
-        global_iter = ckpt['global_iter']
-        print(f'successfully resumed from epoch {epoch}')
-    elif cfg.load_from:
-        ckpt = torch.load(cfg.load_from, map_location='cpu')
-        if 'state_dict' in ckpt:
-            state_dict = ckpt['state_dict']
-        else:
-            state_dict = ckpt
+    # if cfg.resume_from and osp.exists(cfg.resume_from):
+    #     print('resuming from', cfg.resume_from)
+    #     map_location = 'cpu'
+    #     ckpt = torch.load(cfg.resume_from, map_location=map_location)
+    #     print(my_model.load_state_dict(revise_ckpt(ckpt['state_dict']), strict=False))
+    #     optimizer.load_state_dict(ckpt['optimizer'])
+    #     scheduler.load_state_dict(ckpt['scheduler'])
+    #     epoch = ckpt['epoch']
+    #     if 'best_val_miou_pts' in ckpt:
+    #         best_val_miou_pts = ckpt['best_val_miou_pts']
+    #     if 'best_val_miou_vox' in ckpt:
+    #         best_val_miou_vox = ckpt['best_val_miou_vox']
+    #     global_iter = ckpt['global_iter']
+    #     print(f'successfully resumed from epoch {epoch}')
+    # elif cfg.load_from:
+    cfg.load_from = cfg.resume_from
+    print('loading from', cfg.load_from)
+    ckpt = torch.load(cfg.load_from, map_location='cpu')
+    if 'state_dict' in ckpt:
+        state_dict = ckpt['state_dict']
+    else:
+        state_dict = ckpt
+    
+    try:
         state_dict = revise_ckpt(state_dict)
-        try:
-            print(my_model.load_state_dict(state_dict, strict=False))
-        except:
-            state_dict = revise_ckpt_2(state_dict)
-            print(my_model.load_state_dict(state_dict, strict=False))
+        print(my_model.load_state_dict(state_dict, strict=False))
+    except:
+        state_dict = revise_ckpt_2(state_dict)
+        print(my_model.load_state_dict(state_dict, strict=False))
         
 
     # training
@@ -213,13 +219,16 @@ def main(local_rank, args):
             time_e = time.time()
 
             global_iter += 1
-            if i_iter % print_freq == 0 and dist.get_rank() == 0:
-                lr = optimizer.param_groups[0]['lr']
-                logger.info('[TRAIN] Epoch %d Iter %5d/%d: Loss: %.3f (%.3f), grad_norm: %.1f, lr: %.7f, time: %.3f (%.3f)'%(
-                    epoch, i_iter, len(train_dataset_loader), 
-                    loss.item(), np.mean(loss_list), grad_norm, lr,
-                    time_e - time_s, data_time_e - data_time_s
-                ))
+            try:
+                if i_iter % print_freq == 0 and dist.get_rank() == 0:
+                    lr = optimizer.param_groups[0]['lr']
+                    logger.info('[TRAIN] Epoch %d Iter %5d/%d: Loss: %.3f (%.3f), grad_norm: %.1f, lr: %.7f, time: %.3f (%.3f)' % (
+                        epoch, i_iter, len(train_dataset_loader), 
+                        loss.item(), np.mean(loss_list), grad_norm, lr,
+                        time_e - time_s, data_time_e - data_time_s
+                    ))
+            except:
+                pass
             data_time_s = time.time()
             time_s = time.time()
         
@@ -316,9 +325,9 @@ def main(local_rank, args):
 if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--py-config', default='config/tpv_lidarseg.py')
-    parser.add_argument('--work-dir', type=str, default='./out/tpv_lidarseg')
-    parser.add_argument('--resume-from', type=str, default='')
+    parser.add_argument('--py-config', default='config/tpv_lidarseg_dim64.py')
+    parser.add_argument('--work-dir', type=str, default='./out/tpv_lidarseg_dim64')
+    parser.add_argument('--resume-from', type=str, default='./out/tpv_lidarseg_dim64/latest.pth') 
 
     args = parser.parse_args()
     

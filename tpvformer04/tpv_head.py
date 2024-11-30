@@ -47,6 +47,7 @@ class TPVFormerHead(BaseModule):
         self.register_buffer('tpv_mask_hw', tpv_mask_hw)
 
         # transformer layers
+        
         self.encoder = build_transformer_layer_sequence(encoder)
         self.level_embeds = nn.Parameter(
             torch.Tensor(self.num_feature_levels, self.embed_dims))

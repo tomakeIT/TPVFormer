@@ -118,7 +118,7 @@ class TPVImageCrossAttention(BaseModule):
 
         bs, num_query, _ = query.size()
 
-        queries = torch.split(query, [self.tpv_h*self.tpv_w, self.tpv_z*self.tpv_h, self.tpv_w*self.tpv_z], dim=1)
+        queries = torch.split(query, [self.tpv_h*self.tpv_w], dim=1)
         if residual is None:
             slots = [torch.zeros_like(q) for q in queries]
         indexeses = []
@@ -320,7 +320,7 @@ class TPVMSDeformableAttention3D(BaseModule):
     
     def reshape_output(self, output, lens):
         bs, _, d = output.shape
-        outputs = torch.split(output, [lens[0]*self.points_multiplier[0], lens[1]*self.points_multiplier[1], lens[2]*self.points_multiplier[2]], dim=1)
+        outputs = torch.split(output, [lens[0]*self.points_multiplier[0]], dim=1)
         
         outputs = [o.reshape(bs, -1, self.points_multiplier[i], d).sum(dim=2) for i, o in enumerate(outputs)]
         return outputs

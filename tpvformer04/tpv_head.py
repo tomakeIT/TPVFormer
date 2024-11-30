@@ -85,11 +85,11 @@ class TPVFormerHead(BaseModule):
 
         # tpv queries and pos embeds
         tpv_queries_hw = self.tpv_embedding_hw.weight.to(dtype) # [h*w, embed_dims]
-        tpv_queries_zh = self.tpv_embedding_zh.weight.to(dtype)
-        tpv_queries_wz = self.tpv_embedding_wz.weight.to(dtype)
+        # tpv_queries_zh = self.tpv_embedding_zh.weight.to(dtype)
+        # tpv_queries_wz = self.tpv_embedding_wz.weight.to(dtype)
         tpv_queries_hw = tpv_queries_hw.unsqueeze(0).repeat(bs, 1, 1)
-        tpv_queries_zh = tpv_queries_zh.unsqueeze(0).repeat(bs, 1, 1) # [bs, h*w, embed_dims]
-        tpv_queries_wz = tpv_queries_wz.unsqueeze(0).repeat(bs, 1, 1)
+        # tpv_queries_zh = tpv_queries_zh.unsqueeze(0).repeat(bs, 1, 1) # [bs, h*w, embed_dims]
+        # tpv_queries_wz = tpv_queries_wz.unsqueeze(0).repeat(bs, 1, 1)
         tpv_mask_hw = self.tpv_mask_hw.expand(bs, -1, -1) # [bs, h, w]
         tpv_pos_hw = self.positional_encoding(tpv_mask_hw).to(dtype) # [bs, embed_dims, h, w, ]
         tpv_pos_hw = tpv_pos_hw.flatten(2).transpose(1, 2) # [bs, h*w, embed_dims]
@@ -113,13 +113,13 @@ class TPVFormerHead(BaseModule):
             (1,)), spatial_shapes.prod(1).cumsum(0)[:-1]))
         feat_flatten = feat_flatten.permute(0, 2, 1, 3)  # (num_cam, H*W, bs, embed_dims)
         tpv_embed = self.encoder(
-            [tpv_queries_hw, tpv_queries_zh, tpv_queries_wz], # [bs, h*w, embed_dims]
+            [tpv_queries_hw], # [bs, h*w, embed_dims]
             feat_flatten, # (num_cam, H*W, bs, embed_dims)
             feat_flatten, # (num_cam, H*W, bs, embed_dims)
             tpv_h=self.tpv_h, # 100
             tpv_w=self.tpv_w, # 100
             tpv_z=self.tpv_z, # 8
-            tpv_pos=[tpv_pos_hw, None, None], # [bs, h*w, embed_dims]
+            tpv_pos=[tpv_pos_hw], # [bs, h*w, embed_dims]
             spatial_shapes=spatial_shapes,
             level_start_index=level_start_index,
             img_metas=img_metas,

@@ -176,7 +176,7 @@ class TPVFormerEncoder(TransformerLayerSequence):
         bs = tpv_query[0].shape[0]
 
         reference_points_cams, tpv_masks = [], []
-        ref_3ds = [self.ref_3d_hw, self.ref_3d_zh, self.ref_3d_wz] # list of [bs, 4, hw, 3]
+        ref_3ds = [self.ref_3d_hw] # list of [bs, 4, hw, 3]
         for ref_3d in ref_3ds:
             reference_points_cam, tpv_mask = self.point_sampling(
                 ref_3d, self.pc_range, kwargs['img_metas']) # [num_cam, bs, hw++, #p, 2] and [num_cam, bs, hw++, #p]

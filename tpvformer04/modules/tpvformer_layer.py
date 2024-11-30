@@ -180,7 +180,7 @@ class TPVFormerLayer(BaseModule):
                     level_start_index=torch.tensor([0], device=query[0].device),
                     **kwargs)
                 attn_index += 1
-                query = torch.cat([query_0, query[1], query[2]], dim=1)
+                query = torch.cat([query_0], dim=1)
                 identity = query
 
             elif layer == 'norm':
@@ -206,5 +206,5 @@ class TPVFormerLayer(BaseModule):
                 query = self.ffns[ffn_index](
                     query, identity if self.pre_norm else None)
                 ffn_index += 1
-        query = torch.split(query, [tpv_h*tpv_w, tpv_z*tpv_h, tpv_w*tpv_z], dim=1)
+        query = torch.split(query, [tpv_h*tpv_w], dim=1)
         return query

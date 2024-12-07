@@ -85,6 +85,7 @@ def main(local_rank, args):
     unique_label_str = [SemKITTI_label_name[x] for x in unique_label]
 
     from builder import data_builder
+    import random
     train_dataset_loader, val_dataset_loader = \
         data_builder.build(
             dataset_config,
@@ -116,11 +117,11 @@ def main(local_rank, args):
         ckpt = ckpt['state_dict']
     revised_ckpt = revise_ckpt(ckpt)
     print(my_model.load_state_dict(revised_ckpt, strict=False))
-    print('model ckpt:')
-    print(my_model.state_dict().keys())
-    print('loaded ckpt:')
-    print(ckpt.keys())
-    print(f'successfully loaded ckpt')
+    # print('model ckpt:')
+    # print(my_model.state_dict().keys())
+    # print('loaded ckpt:')
+    # print(ckpt.keys())
+    # print(f'successfully loaded ckpt')
 
     print_freq = cfg.print_freq
                 
@@ -130,8 +131,12 @@ def main(local_rank, args):
     CalMeanIou_pts.reset()
     CalMeanIou_vox.reset()
 
+    print(f"total val dataset: {len(val_dataset_loader)}")
     with torch.no_grad():
         for i_iter_val, (imgs, img_metas, val_vox_label, val_grid, val_pt_labs) in enumerate(val_dataset_loader):
+
+            if i_iter_val >= len(val_dataset_loader) // 10:
+                break 
             
             imgs = imgs.cuda()
             val_grid_float = val_grid.to(torch.float32).cuda()
@@ -187,8 +192,8 @@ def main(local_rank, args):
 if __name__ == '__main__':
     # Eval settings
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--py-config', default='config/tpv_lidarseg_dim64.py')
-    parser.add_argument('--ckpt-path', type=str, default='')
+    parser.add_argument('--py-config', default='./config/tpv04_occupancy.py')
+    parser.add_argument('--ckpt-path', type=str, default='./out/tpv_occupancy/tpv04_occupancy_v2.pth')
 
     args = parser.parse_args()
     
@@ -196,4 +201,5 @@ if __name__ == '__main__':
     args.gpus = ngpus
     print(args)
 
-    torch.multiprocessing.spawn(main, args=(args,), nprocs=args.gpus)
+    main(0, args)
+    # torch.multiprocessing.spawn(main, args=(args,), nprocs=args.gpus)

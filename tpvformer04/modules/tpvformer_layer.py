@@ -58,6 +58,7 @@ class TPVFormerLayer(BaseModule):
                  norm_cfg=dict(type='LN'),
                  init_cfg=None,
                  batch_first=True,
+                 planes=['hw', 'zh', 'wz'],
                  **kwargs):
         # import pdb; pdb.set_trace()
         deprecated_args = dict(
@@ -92,6 +93,7 @@ class TPVFormerLayer(BaseModule):
         self.norm_cfg = norm_cfg
         self.pre_norm = operation_order[0] == 'norm'
         self.attentions = ModuleList()
+        self.planes = planes
 
         index = 0
         for operation_name in operation_order:
@@ -168,6 +170,7 @@ class TPVFormerLayer(BaseModule):
         for layer in self.operation_order:
             # cross view hybrid-attention
             if layer == 'self_attn':
+                # only attention on hw plane.
                 query_0 = self.attentions[attn_index](
                     query[0],
                     None,
@@ -179,7 +182,7 @@ class TPVFormerLayer(BaseModule):
                     level_start_index=torch.tensor([0], device=query[0].device),
                     **kwargs)
                 attn_index += 1
-                query = torch.cat([query_0, query[1], query[2]], dim=1)
+                query = torch.cat([query_0, *query[1:]], dim=1)
                 identity = query
 
             elif layer == 'norm':
@@ -205,5 +208,11 @@ class TPVFormerLayer(BaseModule):
                 query = self.ffns[ffn_index](
                     query, identity if self.pre_norm else None)
                 ffn_index += 1
-        query = torch.split(query, [tpv_h*tpv_w, tpv_z*tpv_h, tpv_w*tpv_z], dim=1)
+
+        split_list = [tpv_h*tpv_w]
+        if 'zh' in self.planes:
+            split_list.append(tpv_h*tpv_z)
+        if 'wz' in self.planes:
+            split_list.append(tpv_w*tpv_z)
+        query = torch.split(query, split_list, dim=1)
         return query

@@ -15,6 +15,8 @@ class ImagePoint_NuScenes(data.Dataset):
         self.learning_map = nuscenesyaml['learning_map']
 
         self.nusc_infos = data['infos']
+        np.random.shuffle(self.nusc_infos)
+
         self.data_path = data_path
         self.nusc = nusc
 

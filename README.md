@@ -51,29 +51,6 @@ This project explores the impact of plane configurations in the **Tri-Perspectiv
 
 ---
 
-## Dependencies
-- LaTeX IEEEtran Class (`IEEEtran.cls`)
-- Packages: `amsmath`, `graphicx`, `booktabs`, `xcolor`, `adjustbox`, `tcolorbox`, `rotating`
-
----
-
-## How to Use
-1. **Clone Repository**:
-   ```bash
-   git clone https://github.com/[username]/tpv-ablation-study.git
-   ```
-2. **Compile the Paper**:
-   - Open `main.tex` in your LaTeX editor (e.g., Overleaf or TeXShop).
-   - Compile using **PDFLaTeX**.
-
-3. **Run Experiments**:
-   - Refer to the `code/` directory for scripts used in TPV ablation experiments.
-   - Modify configurations in `config.yaml` to test specific setups.
-
-4. **Visualize Results**:
-   - Use the provided visualization scripts in `visualization/` to reproduce figures from the paper.
-
----
 
 ## Future Work
 - Extend experiments to **3D object detection** and **segmentation** tasks.

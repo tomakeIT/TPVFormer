@@ -45,6 +45,8 @@ This project explores the impact of plane configurations in the **Tri-Perspectiv
 
 ## Case Study
 - **Visualization**:
+
+![Case Study](Case%20Study.png)
   - Top-view and isometric-view results demonstrate the significant improvement in 3D semantic occupancy predictions when adding vertical planes ($DH$ or $WD$) to the BEV ($HW$) configuration.
 
 ---

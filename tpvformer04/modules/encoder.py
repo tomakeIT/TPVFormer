@@ -18,13 +18,14 @@ class TPVFormerEncoder(TransformerLayerSequence):
 
     def __init__(self, *args, tpv_h, tpv_w, tpv_z, pc_range=None, 
                  num_points_in_pillar=[4, 32, 32], return_intermediate=False, 
-                 **kwargs):
+                 planes=['hw', 'zh', 'wz'], **kwargs):
 
         super().__init__(*args, **kwargs)
         self.return_intermediate = return_intermediate
 
         self.tpv_h, self.tpv_w, self.tpv_z = tpv_h, tpv_w, tpv_z
         self.num_points_in_pillar = num_points_in_pillar
+        self.planes = planes
         assert num_points_in_pillar[1] == num_points_in_pillar[2] and num_points_in_pillar[1] % num_points_in_pillar[0] == 0
         self.pc_range = pc_range
         self.fp16_enabled = False
@@ -176,7 +177,11 @@ class TPVFormerEncoder(TransformerLayerSequence):
         bs = tpv_query[0].shape[0]
 
         reference_points_cams, tpv_masks = [], []
-        ref_3ds = [self.ref_3d_hw] # list of [bs, 4, hw, 3]
+        ref_3ds = [self.ref_3d_hw]
+        if 'zh' in self.planes:
+            ref_3ds.append(self.ref_3d_zh)
+        if 'wz' in self.planes:
+            ref_3ds.append(self.ref_3d_wz)
         for ref_3d in ref_3ds:
             reference_points_cam, tpv_mask = self.point_sampling(
                 ref_3d, self.pc_range, kwargs['img_metas']) # [num_cam, bs, hw++, #p, 2] and [num_cam, bs, hw++, #p]

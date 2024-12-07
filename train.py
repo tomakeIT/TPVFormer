@@ -4,7 +4,7 @@ import torch
 import torch.distributed as dist
 
 from utils.metric_util import MeanIoU
-from utils.load_save_util import revise_ckpt, revise_ckpt_2
+from utils.load_save_util import revise_ckpt, revise_ckpt_2, revise_ckpt_3
 from dataloader.dataset import get_nuScenes_label_name
 from builder import loss_builder
 
@@ -27,6 +27,8 @@ def main(local_rank, args):
     # global settings
     torch.backends.cudnn.benchmark = True
 
+    
+
     # load config
     cfg = Config.fromfile(args.py_config)
     cfg.work_dir = args.work_dir
@@ -41,7 +43,7 @@ def main(local_rank, args):
     grid_size = cfg.grid_size
 
     # init DDP
-    distributed = True
+    distributed = False
     ip = os.environ.get("MASTER_ADDR", "127.0.0.1")
     port = os.environ.get("MASTER_PORT", "20506")
     hosts = int(os.environ.get("WORLD_SIZE", 1))  # number of nodes
@@ -154,20 +156,20 @@ def main(local_rank, args):
     #     global_iter = ckpt['global_iter']
     #     print(f'successfully resumed from epoch {epoch}')
     # elif cfg.load_from:
-    cfg.load_from = cfg.resume_from
-    print('loading from', cfg.load_from)
-    ckpt = torch.load(cfg.load_from, map_location='cpu')
+    # cfg.load_from = cfg.resume_from
+    print('loading from', cfg.resume_from)
+    ckpt = torch.load(cfg.resume_from, map_location='cpu')
     if 'state_dict' in ckpt:
         state_dict = ckpt['state_dict']
     else:
         state_dict = ckpt
     
-    try:
-        state_dict = revise_ckpt(state_dict)
-        print(my_model.load_state_dict(state_dict, strict=False))
-    except:
-        state_dict = revise_ckpt_2(state_dict)
-        print(my_model.load_state_dict(state_dict, strict=False))
+    # try:
+    state_dict = revise_ckpt_3(state_dict)
+    print(my_model.load_state_dict(state_dict, strict=False))
+    # except:
+    #     state_dict = revise_ckpt_2(state_dict)
+    #     print(my_model.load_state_dict(state_dict, strict=False))
         
 
     # training
@@ -183,6 +185,9 @@ def main(local_rank, args):
         time_s = time.time()
         for i_iter, (imgs, img_metas, train_vox_label, train_grid, train_pt_labs) in enumerate(train_dataset_loader):
             
+            # if i_iter >= len(train_dataset_loader) // 300:
+            #     break 
+
             imgs = imgs.cuda()
             train_grid = train_grid.to(torch.float32).cuda()
             if cfg.lovasz_input == 'voxel' or cfg.ce_input == 'voxel':
@@ -233,20 +238,20 @@ def main(local_rank, args):
             time_s = time.time()
         
         # save checkpoint
-        if dist.get_rank() == 0:
-            dict_to_save = {
-                'state_dict': my_model.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'scheduler': scheduler.state_dict(),
-                'epoch': epoch + 1,
-                'global_iter': global_iter,
-                'best_val_miou_pts': best_val_miou_pts,
-                'best_val_miou_vox': best_val_miou_vox
-            }
-            save_file_name = os.path.join(os.path.abspath(args.work_dir), f'epoch_{epoch+1}.pth')
-            torch.save(dict_to_save, save_file_name)
-            dst_file = osp.join(args.work_dir, 'latest.pth')
-            mmcv.symlink(save_file_name, dst_file)
+        # if dist.get_rank() == 0:
+        dict_to_save = {
+            'state_dict': my_model.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'scheduler': scheduler.state_dict(),
+            'epoch': epoch + 1,
+            'global_iter': global_iter,
+            'best_val_miou_pts': best_val_miou_pts,
+            'best_val_miou_vox': best_val_miou_vox
+        }
+        save_file_name = os.path.join(os.path.abspath(args.work_dir), f'epoch_{epoch+1}.pth')
+        torch.save(dict_to_save, save_file_name)
+        dst_file = osp.join(args.work_dir, 'latest.pth')
+        mmcv.symlink(save_file_name, dst_file)
 
         epoch += 1
         
@@ -258,7 +263,9 @@ def main(local_rank, args):
 
         with torch.no_grad():
             for i_iter_val, (imgs, img_metas, val_vox_label, val_grid, val_pt_labs) in enumerate(val_dataset_loader):
-                
+
+                # if i_iter_val >= len(val_dataset_loader) // 30:
+                #     break 
                 imgs = imgs.cuda()
                 val_grid_float = val_grid.to(torch.float32).cuda()
                 val_grid_int = val_grid.to(torch.long).cuda()
@@ -325,9 +332,9 @@ def main(local_rank, args):
 if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--py-config', default='config/tpv_lidarseg_dim64.py')
-    parser.add_argument('--work-dir', type=str, default='./out/tpv_lidarseg_dim64')
-    parser.add_argument('--resume-from', type=str, default='./out/tpv_lidarseg_dim64/latest.pth') 
+    parser.add_argument('--py-config', default='./config/tpv04_occupancy.py')
+    parser.add_argument('--work-dir', type=str, default='./out/tpv_occupancy')
+    parser.add_argument('--resume-from', type=str, default='./out/tpv_occupancy/tpv04_occupancy_v2.pth') 
 
     args = parser.parse_args()
     
@@ -335,4 +342,4 @@ if __name__ == '__main__':
     args.gpus = ngpus
     print(args)
 
-    torch.multiprocessing.spawn(main, args=(args,), nprocs=args.gpus)
+    main(0, args)

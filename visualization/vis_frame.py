@@ -218,7 +218,7 @@ if __name__ == "__main__":
         ckpt = torch.load(args.ckpt_path, map_location='cpu')
         if 'state_dict' in ckpt:
             ckpt = ckpt['state_dict']
-        print(my_model.load_state_dict(revise_ckpt(ckpt)))
+        print(my_model.load_state_dict(revise_ckpt(ckpt), strict=False))
     my_model.eval()
 
     # prepare data

@@ -45,6 +45,7 @@ class TPVImageCrossAttention(BaseModule):
                  tpv_h=None,
                  tpv_w=None,
                  tpv_z=None,
+                 planes=['hw', 'zh', 'wz'],
                  **kwargs
                  ):
         super().__init__(init_cfg)
@@ -59,6 +60,7 @@ class TPVImageCrossAttention(BaseModule):
         self.output_proj = nn.Linear(embed_dims, embed_dims)
         self.batch_first = batch_first
         self.tpv_h, self.tpv_w, self.tpv_z = tpv_h, tpv_w, tpv_z
+        self.planes = planes
         self.init_weight()
 
     def init_weight(self):
@@ -118,7 +120,13 @@ class TPVImageCrossAttention(BaseModule):
 
         bs, num_query, _ = query.size()
 
-        queries = torch.split(query, [self.tpv_h*self.tpv_w], dim=1)
+        split_list = [self.tpv_h*self.tpv_w]
+        if 'zh' in self.planes:
+            split_list.append(self.tpv_h*self.tpv_z)
+        if 'wz' in self.planes:
+            split_list.append(self.tpv_w*self.tpv_z)
+        queries = torch.split(query, split_list, dim=1)
+
         if residual is None:
             slots = [torch.zeros_like(q) for q in queries]
         indexeses = []
@@ -221,6 +229,7 @@ class TPVMSDeformableAttention3D(BaseModule):
                  tpv_h=None,
                  tpv_w=None,
                  tpv_z=None,
+                 planes=['hw', 'zh', 'wz'],
                 ):
         super().__init__(init_cfg)
         if embed_dims % num_heads != 0:
@@ -267,6 +276,7 @@ class TPVMSDeformableAttention3D(BaseModule):
             nn.Linear(embed_dims, num_heads * num_levels * num_points[i]) for i in range(3)
         ])
         self.value_proj = nn.Linear(embed_dims, embed_dims)
+        self.planes = planes
 
         self.init_weights()
 
@@ -320,7 +330,18 @@ class TPVMSDeformableAttention3D(BaseModule):
     
     def reshape_output(self, output, lens):
         bs, _, d = output.shape
-        outputs = torch.split(output, [lens[0]*self.points_multiplier[0]], dim=1)
+
+
+        split_list = [lens[0] * self.points_multiplier[0]]
+        # FIXME
+        if 'zh' in self.planes:
+            split_list.append(lens[1] * self.points_multiplier[1])
+        if 'wz' in self.planes:
+            if len(self.planes) == 2:
+                split_list.append(lens[1] * self.points_multiplier[1])
+            else:
+                split_list.append(lens[2] * self.points_multiplier[2])
+        outputs = torch.split(output, split_list, dim=1)
         
         outputs = [o.reshape(bs, -1, self.points_multiplier[i], d).sum(dim=2) for i, o in enumerate(outputs)]
         return outputs

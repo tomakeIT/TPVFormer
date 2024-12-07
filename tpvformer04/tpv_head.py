@@ -26,6 +26,7 @@ class TPVFormerHead(BaseModule):
                  num_cams=6,
                  encoder=None,
                  embed_dims=256,
+                 planes=['hw', 'zh', 'wz'],
                  **kwargs):
         super().__init__()
 
@@ -40,6 +41,7 @@ class TPVFormerHead(BaseModule):
         self.real_h = self.pc_range[4] - self.pc_range[1]
         self.real_z = self.pc_range[5] - self.pc_range[2]
         self.fp16_enabled = False
+        self.planes = planes
 
         # positional encoding
         self.positional_encoding = build_positional_encoding(positional_encoding)
@@ -54,8 +56,10 @@ class TPVFormerHead(BaseModule):
         self.cams_embeds = nn.Parameter(
             torch.Tensor(self.num_cams, self.embed_dims))
         self.tpv_embedding_hw = nn.Embedding(self.tpv_h * self.tpv_w, self.embed_dims)
-        self.tpv_embedding_zh = nn.Embedding(self.tpv_z * self.tpv_h, self.embed_dims)
-        self.tpv_embedding_wz = nn.Embedding(self.tpv_w * self.tpv_z, self.embed_dims)
+        if 'zh' in self.planes:
+            self.tpv_embedding_zh = nn.Embedding(self.tpv_z * self.tpv_h, self.embed_dims)
+        if 'wz' in self.planes:
+            self.tpv_embedding_wz = nn.Embedding(self.tpv_w * self.tpv_z, self.embed_dims)
 
     def init_weights(self):
         """Initialize the transformer weights."""
@@ -85,11 +89,16 @@ class TPVFormerHead(BaseModule):
 
         # tpv queries and pos embeds
         tpv_queries_hw = self.tpv_embedding_hw.weight.to(dtype) # [h*w, embed_dims]
-        # tpv_queries_zh = self.tpv_embedding_zh.weight.to(dtype)
-        # tpv_queries_wz = self.tpv_embedding_wz.weight.to(dtype)
+        if 'zh' in self.planes:
+            tpv_queries_zh = self.tpv_embedding_zh.weight.to(dtype)
+        if 'wz' in self.planes:
+            tpv_queries_wz = self.tpv_embedding_wz.weight.to(dtype)
+        
         tpv_queries_hw = tpv_queries_hw.unsqueeze(0).repeat(bs, 1, 1)
-        # tpv_queries_zh = tpv_queries_zh.unsqueeze(0).repeat(bs, 1, 1) # [bs, h*w, embed_dims]
-        # tpv_queries_wz = tpv_queries_wz.unsqueeze(0).repeat(bs, 1, 1)
+        if 'zh' in self.planes:
+            tpv_queries_zh = tpv_queries_zh.unsqueeze(0).repeat(bs, 1, 1)
+        if 'wz' in self.planes:
+            tpv_queries_wz = tpv_queries_wz.unsqueeze(0).repeat(bs, 1, 1)
         tpv_mask_hw = self.tpv_mask_hw.expand(bs, -1, -1) # [bs, h, w]
         tpv_pos_hw = self.positional_encoding(tpv_mask_hw).to(dtype) # [bs, embed_dims, h, w, ]
         tpv_pos_hw = tpv_pos_hw.flatten(2).transpose(1, 2) # [bs, h*w, embed_dims]
@@ -112,8 +121,18 @@ class TPVFormerHead(BaseModule):
         level_start_index = torch.cat((spatial_shapes.new_zeros(
             (1,)), spatial_shapes.prod(1).cumsum(0)[:-1]))
         feat_flatten = feat_flatten.permute(0, 2, 1, 3)  # (num_cam, H*W, bs, embed_dims)
+
+        queries = [tpv_queries_hw]
+        tpv_pos = [tpv_pos_hw]
+        if 'zh' in self.planes:
+            queries.append(tpv_queries_zh)
+            tpv_pos.append(None)
+        if 'wz' in self.planes:
+            queries.append(tpv_queries_wz)
+            tpv_pos.append(None)
+
         tpv_embed = self.encoder(
-            [tpv_queries_hw], # [bs, h*w, embed_dims]
+            queries, # [bs, h*w, embed_dims]
             feat_flatten, # (num_cam, H*W, bs, embed_dims)
             feat_flatten, # (num_cam, H*W, bs, embed_dims)
             tpv_h=self.tpv_h, # 100
